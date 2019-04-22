@@ -12,8 +12,6 @@ class Utilities:
     def __init__(self, in_args):
         self.in_args = in_args
 
-
-
     def valid_dir(self, dir):
         """
         Utility function to check the valid directory

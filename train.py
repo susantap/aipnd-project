@@ -7,7 +7,7 @@
 #
 ##
 
-# All required importa are here
+# All required imports are here
 from get_input_args import get_input_args_training
 from utilities import Utilities
 from os import path
@@ -85,13 +85,14 @@ def main():
         test_model(testloader, device, model, criterion)
 
         # Save the Checkpoint
-        save_checkpoint(model, train_image_datasets, in_arg, utils)
+        save_checkpoint(model, train_image_datasets, in_arg)
 
 
 def arg_validation(in_arg, utils):
     """
     Argument validation function
     :param in_arg: takes the command line arguments
+    :param utils: The Utiliity class
     :return: returns a list of results. 0s and 1s(0 = False and 1 = True)
     """
     results = []
@@ -107,11 +108,13 @@ def initialize_model(model, in_arg, utils):
     """
     Initializing the model
     :param model: training model
+    :param in_arg: Input arguments from commandline
+    :param utils: The Utiliity class
     :return: model,criterion and optimizer
     """
     # Find if GPU available, if yes assign the device to GPU
 
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # check for the gpu argument else set it up for CPU.
     if in_arg.gpu:
@@ -247,22 +250,21 @@ def test_model(testloader, device, model, criterion):
           f"Validation accuracy: {accuracy / len(testloader):.3f}")
 
 
-def save_checkpoint(model, train_image_datasets, in_arg, utils):
+def save_checkpoint(model, train_image_datasets, in_arg):
     """
     save the checkpoint of a trained model
     :param model:
     :param train_image_datasets:
     :param in_arg:
-    :param utils:
     :return:
     """
-
+    input_feature = list(model.classifier.children())[0].in_features
     model.class_to_idx = train_image_datasets.class_to_idx
     checkpoint_params = {'arch': in_arg.arch,
                          'state_dict': model.state_dict(),
                          'class_to_idx': model.class_to_idx,
                          'classifier': model.classifier,
-                         'input_s': 25088,
+                         'input_s': input_feature,
                          'output_s': 102,
                          'epochs': in_arg.epochs}
 

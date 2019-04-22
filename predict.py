@@ -30,9 +30,11 @@ def main():
 
     image_path = in_arg.image_path[0]
 
+    top_k = 3
+
     if utils.validate_image_file(image_path) > 0:
         # Proceed with the prediction
-        model = load_checkpoint(filepath=in_arg.checkpoint)
+        model = load_checkpoint(utils, filepath=in_arg.checkpoint[0])
         device = utils.check_gpu()
         model.to(device)
 
@@ -42,24 +44,38 @@ def main():
         except ValueError as e:
             print("JSON object issue: %s") % e
 
-        prob, classes, flower_names = predict(image_path, model, in_arg, device, cat_to_name)
+        if in_arg.top_k is not None:
+            top_k = in_arg.top_k
 
-        print(prob)
-        print(classes)
+        prob, classes, flower_names = predict(image_path, model, in_arg, device, cat_to_name, top_k)
+        
+        utils.debug("probabilities", prob)
+        utils.debug("classes", classes)
+        utils.debug("flower_names", flower_names)
+        if in_arg.top_k is None:
+            # if no top_k is been set just give the predicted flower name
+            print("The flower in the image: {} is a {}".format(image_path, flower_names[0]))
+        else:
+            # if the top_k is been set then give top_k flowers
+            print("Top {} most likely classe for the flower image{} are:".format(top_k, image_path))
+
+            for i in range(len(prob)):
+                print("Flower: %30s, class: %5s probability: %f" % (flower_names[i], classes[i], prob[i]))
 
 
-def load_checkpoint(filepath):
+def load_checkpoint(utils, filepath):
     # to avoid: RuntimeError: cuda runtime error (35) :
     # CUDA driver version is insufficient for CUDA runtime version at torch/csrc/cuda/Module.cpp:51
     checkpoint = torch.load(filepath, map_location=lambda storage, loc: storage)
 
     model = getattr(models, checkpoint['arch'])(pretrained=True)
 
+    utils.debug("model", model)
+
     model.state_dict = checkpoint['state_dict']
     model.class_to_idx = checkpoint['class_to_idx']
     model.classifier = checkpoint['classifier']
-    model.state_dict = checkpoint['state_dict']
-    model.output_s = checkpoint['input_s']
+    model.input_s = checkpoint['input_s']
     model.output_s = checkpoint['output_s']
     model.epochs = checkpoint['epochs']
 
@@ -100,7 +116,7 @@ def process_image(image_file):
     return image
 
 
-def predict(image_path, model, in_arg, device, cat_to_name):
+def predict(image_path, model, in_arg, device, cat_to_name, top_k):
     """
     Predict the class (or classes) of an image using a trained deep learning model.
     :param image_path:
@@ -125,7 +141,7 @@ def predict(image_path, model, in_arg, device, cat_to_name):
 
     pos = torch.exp(model.forward(image))
 
-    top_p, top_class = pos.topk(in_arg.top_k, dim=1)
+    top_p, top_class = pos.topk(top_k, dim=1)
     top_class_list = top_class.tolist()[0]
 
     # print(top_class.tolist()[0])
@@ -142,7 +158,7 @@ def predict(image_path, model, in_arg, device, cat_to_name):
     # print(items)
     for k, v in model.class_to_idx.items():
         indices.append(k)
-    for i in range(in_arg.top_k):
+    for i in range(top_k):
         classes.append(indices[top_class_list[i]])
         flower_names.append(cat_to_name.get(indices[top_class_list[i]]))
 

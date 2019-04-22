@@ -72,7 +72,10 @@ def get_input_args_predict():
                         help='Path of the image file to be predicted')
     parser.add_argument('checkpoint', metavar='N', type=str, nargs='+',
                         help='Saved checkpoint to load the model')
-    parser.add_argument('--top_k', type=int, default=3, help='Return top KK most likely classes')
+
+    # Do not put a default value, As if it's not set then you are just going to predict the flower
+    # name with the highest probability.
+    parser.add_argument('--top_k', type=int, help='Return top KK most likely classes')
     parser.add_argument('--category_names ', type=str, default='cat_to_name.json',
                         help="Use a mapping of categories to real names: ")
 
