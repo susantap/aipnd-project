@@ -76,7 +76,7 @@ def get_input_args_predict():
     # Do not put a default value, As if it's not set then you are just going to predict the flower
     # name with the highest probability.
     parser.add_argument('--top_k', type=int, help='Return top KK most likely classes')
-    parser.add_argument('--category_names ', type=str, default='cat_to_name.json',
+    parser.add_argument('--category_names', type=str, default='cat_to_name.json',
                         help="Use a mapping of categories to real names: ")
 
     parser.add_argument('--gpu', action='store_true')

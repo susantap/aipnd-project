@@ -10,11 +10,12 @@
 # All required importa are here
 from get_input_args import get_input_args_predict
 from utilities import Utilities
-from torchvision import models
+from torchvision import models, transforms
 from PIL import Image
 import numpy as np
 import json
 import torch
+from math import floor
 
 """
 main function for the predict
@@ -39,7 +40,7 @@ def main():
         model.to(device)
 
         try:
-            with open('cat_to_name.json', 'r') as f:
+            with open(in_arg.category_names, 'r') as f:
                 cat_to_name = json.load(f)
         except ValueError as e:
             print("JSON object issue: %s") % e
@@ -92,15 +93,34 @@ def process_image(image_file):
     """
 
     # open and resize
+    # open and resize
     image = Image.open(image_file)
-    image = image.resize((256, 256))
+    width, height = image.size
+    size = 256, 256
+    # need to maintain the aspect ratio
+    if width > height:
+        ratio = float(width) / float(height)
+        newheight = ratio * size[0]
+        image = image.resize((size[0], int(floor(newheight))), Image.ANTIALIAS)
+    else:
+        ratio = float(height) / float(width)
+        newwidth = ratio * size[1]
+        image = image.resize((int(floor(newwidth)), size[1]), Image.ANTIALIAS)
 
     # crop
-    left = 0.5 * (image.width - 224)
-    bottom = 0.5 * (image.height - 224)
-    right = left + 224
-    top = bottom + 224
-    image = image.crop((left, bottom, right, top))
+    '''
+    left = image.width //2 - (224/2)
+    bottom  = image.height //2 - (224/2)
+    right = image.width //2 - (224/2)
+    top  = bottom + 224
+
+    '''
+    left = image.width // 2 - (224 / 2)
+    top = image.height // 2 - (224 / 2)
+    right = image.width // 2 + (224 / 2)
+    bottom = image.height // 2 + (224 / 2)
+
+    image = image.crop((left, top, right, bottom))
 
     # Normalize
     image = np.array(image) / 255
